@@ -3,8 +3,7 @@
 Don't forget to put it in requirements.txt! That's important for deployment.
 Virtual environments will need that file to install dependencies, which is way better than using global libraries
 
-# File structure
-
+```
 /app
 ├── main.py               # FastAPI app entrypoint (creates app, includes routers)
 ├── config.py             # Pydantic settings for env vars (INFERENCE_URL, MCP_ENDPOINT, DB_URL…)
@@ -59,3 +58,5 @@ Virtual environments will need that file to install dependencies, which is way b
 ├── requirements.txt       # fastapi, uvicorn, httpx, sqlalchemy, jose, better-profanity…
 ├── runtime.txt            # python-3.13.5
 └── README.md              # Overview + local/Heroku dev instructions
+
+```
