@@ -1,5 +1,5 @@
 fastapi[standard]
 alt-profanity-check
 SQLAlchemy
-PyJWT==2.10.1
+PyJWT
 passlib

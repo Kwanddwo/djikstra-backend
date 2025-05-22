@@ -34,5 +34,5 @@ def verify_token(token: str):
         if email is None:
             return None
         return email
-    except jwt.PyJWTError:
+    except jwt.exception.InvalidTokenError:
         return None

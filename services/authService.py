@@ -1,9 +1,9 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from models import models
-from schemas import schemas 
-from helpers import authHelpers
+from app.models import models
+from app.schemas import schemas 
+from app.helpers import authHelpers
 
 def register_user(user: schemas.UserCreate, db: Session):
     existing = db.query(models.User).filter(models.User.email == user.email).first()

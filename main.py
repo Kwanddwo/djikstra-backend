@@ -2,9 +2,22 @@ from fastapi import FastAPI
 from routes import authRoutes, aiRoutes
 from models import Base
 from db import engine
+from fastapi.middleware.cors import CORSMiddleware
+import os
+from app.routes import authRoutes
+from app.db.db import Base, engine
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-app.include_router(authRoutes.router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(authRoutes.router, prefix="/auth")
 app.include_router(aiRoutes.router)
