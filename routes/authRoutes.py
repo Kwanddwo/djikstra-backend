@@ -35,13 +35,12 @@ def login(
 def verify(
     response: Response,
     request: Request,
-    db: Session = Depends(get_db),
 ):
     token = authHelpers.extract_token_from_request(request)
     if not token:
         response.status_code = 401
         return {"detail": "Token not found"}
-    user = authHelpers.verify_token(token, db)
+    user = authHelpers.verify_token(token)
     if not user:
         response.status_code = 401
         return {"detail": "Invalid token"}
