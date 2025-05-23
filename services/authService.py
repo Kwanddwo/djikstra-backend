@@ -33,7 +33,7 @@ def login_user(form_data: schemas.UserLogin, db: Session):
     token = authHelpers.create_access_token(
         data={
             "id": str(user.id), 
-            "email": user, 
+            "email": user.email, 
             "name": user.firstname + " " + user.lastname
         }
     )

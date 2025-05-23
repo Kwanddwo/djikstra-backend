@@ -31,7 +31,7 @@ def login(
 
     return token_data
 
-@router.post("/verify", response_model=schemas.UserOut)
+@router.post("/verify")
 def verify(
     response: Response,
     request: Request,
