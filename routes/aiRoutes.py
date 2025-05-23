@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from schemas.schemas import ChatRequest
 from services import aiService
 from helpers.authHelpers import get_current_user
