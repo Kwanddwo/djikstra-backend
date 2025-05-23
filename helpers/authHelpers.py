@@ -60,7 +60,7 @@ def extract_token_from_request(request: Request):
     
     return token
     
-def get_current_user(request: Request = Depends(), db: Session = Depends(get_db)):
+def get_current_user(request: Request, db: Session = Depends(get_db)):
     token = extract_token_from_request(request)
     
     if not token:
