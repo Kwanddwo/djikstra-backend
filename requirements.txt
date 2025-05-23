@@ -1,6 +1,7 @@
 fastapi[standard]
 alt-profanity-check
 sqlalchemy
+alembic
 psycopg2-binary
 PyJWT
 passlib
