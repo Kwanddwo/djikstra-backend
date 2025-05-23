@@ -4,7 +4,9 @@ from fastapi import HTTPException
 from profanity_check import predict
 from schemas.schemas import ChatRequest
 from models.models import User
+from datetime import datetime, timedelta
 
+DAILY_LIMIT = 10_000
 INFERENCE_URL     = os.getenv("INFERENCE_URL")
 INFERENCE_KEY     = os.getenv("INFERENCE_KEY")
 INFERENCE_MODEL_ID = os.getenv("INFERENCE_MODEL_ID")
@@ -36,7 +38,10 @@ def get_user_context(user_id: str):
         "Current Page": "Shortest Path Algorithms"    
     }
 
-async def get_response(req: ChatRequest, user: User):
+async def get_response(req: ChatRequest, db, user: User):
+    if not quota_ok(user, db):
+        raise HTTPException(429, "Daily token limit reached.")
+    
     if not all([INFERENCE_URL, INFERENCE_KEY, INFERENCE_MODEL_ID]):
         raise HTTPException(500, "AI service not configured")
     
@@ -55,8 +60,9 @@ async def get_response(req: ChatRequest, user: User):
         "model": INFERENCE_MODEL_ID,
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": req.user_input}
-        ]
+            {"role": "user", "content": req.user_input},
+        ],
+        "max_tokens": 1000,
     }
 
     headers = {
@@ -77,5 +83,19 @@ async def get_response(req: ChatRequest, user: User):
         raise HTTPException(resp.status_code, f"AI error: {resp.text}")
     
     data = resp.json()
+    total_tokens = data["usage"]["total_tokens"]
+    if total_tokens > 2000:
+        raise HTTPException(400, "Token limit exceeded. Please shorten your request.")
     print(data)
     return {"reply": data["choices"][0]["message"]["content"]}
+
+
+def quota_ok(user: User, db):
+    # reset once every 24h
+    if datetime.utcnow() - user.last_reset > timedelta(days=1):
+        user.tokens_used = 0
+        user.last_reset = datetime.utcnow()
+        db.commit()
+    if user.tokens_used >= DAILY_LIMIT:
+        raise HTTPException(429, "Daily token limit reached.")
+    return user
