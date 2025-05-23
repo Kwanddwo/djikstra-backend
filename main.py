@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from db import engine
 from fastapi.middleware.cors import CORSMiddleware
 from models import Base
 from routes import authRoutes, aiRoutes
