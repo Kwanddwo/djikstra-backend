@@ -15,7 +15,6 @@ app = FastAPI(
 
 # Define security scheme for Swagger UI docs
 security_scheme = HTTPBearer(
-    name="Authorization",
     description="Enter token in the format 'Bearer {token}'",
     auto_error=False,
 )

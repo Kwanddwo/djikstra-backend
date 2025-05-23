@@ -10,9 +10,7 @@ from sqlalchemy.orm import Session
 from models.models import User
 from db.db import get_db
 
-bearer_scheme = HTTPBearer(
-    description="Enter token in the format 'Bearer <token>'",
-)
+bearer_scheme = HTTPBearer(auto_error=False)
 
 # Load environment variables
 load_dotenv()
