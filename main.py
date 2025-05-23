@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from models import Base
+from models.models import Base
 from routes import authRoutes, aiRoutes
 from db.db import Base, engine
 
