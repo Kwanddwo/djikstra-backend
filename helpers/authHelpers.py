@@ -40,10 +40,7 @@ def create_access_token(data: dict):
 def verify_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        id: str = payload.get("id")
-        if id is None:
-            return None
-        return id
+        return payload
     except ExpiredSignatureError:
         print("Token has expired")
         return None
@@ -73,7 +70,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
         
-    user_id = verify_token(token)
+    user_id = verify_token(token).get("id")
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
