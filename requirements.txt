@@ -1,5 +1,10 @@
 fastapi[standard]
 alt-profanity-check
-SQLAlchemy
+sqlalchemy
+psycopg2-binary
 PyJWT
 passlib
+python-dotenv
+httpx
+pydantic
+bcrypt
