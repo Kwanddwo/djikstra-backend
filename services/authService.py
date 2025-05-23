@@ -29,5 +29,5 @@ def login_user(form_data: schemas.UserLogin, db: Session):
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = authHelpers.create_access_token(data={"sub": user.email})
+    token = authHelpers.create_access_token(data={"id": str(user.id)})
     return {"access_token": token, "token_type": "bearer"}

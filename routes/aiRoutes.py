@@ -1,9 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from schemas.schemas import ChatRequest
 from services import aiService
+from helpers.authHelpers import get_current_user
+from models.models import User
 
 router = APIRouter()
 
 @router.post("/ai-chat")
-async def ai_chat(req: ChatRequest):
-    return aiService.get_response(req)
+async def ai_chat(req: ChatRequest, current_user: User = Depends(get_current_user)):
+    return aiService.get_response(req, current_user)

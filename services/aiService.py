@@ -3,6 +3,7 @@ import httpx
 from fastapi import HTTPException
 from profanity_check import predict
 from schemas.schemas import ChatRequest
+from models.models import User
 
 INFERENCE_URL     = os.getenv("INFERENCE_URL")
 INFERENCE_KEY     = os.getenv("INFERENCE_KEY")
@@ -35,14 +36,14 @@ def get_user_context(user_id: str):
         "Current Page": "Shortest Path Algorithms"    
     }
 
-async def get_response(req: ChatRequest):
+async def get_response(req: ChatRequest, user: User):
     if not all([INFERENCE_URL, INFERENCE_KEY, INFERENCE_MODEL_ID]):
         raise HTTPException(500, "AI service not configured")
     
     if predict([req.user_input])[0] == 1:
         return {"reply": "Hey, I'd love to help you, but I can't assist with that kind of content. Please ask me something else."}
 
-    user_ctx = get_user_context("user_id")  # Replace with actual user ID
+    user_ctx = get_user_context(user.id)  # Replace with actual user ID
     
     system_prompt = (
         f"{SYSTEM_PROMPT_BASE} "
