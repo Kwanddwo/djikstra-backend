@@ -19,14 +19,6 @@ security_scheme = HTTPBearer(
     auto_error=False,
 )
 
-# Include your security scheme in OpenAPI docs
-app.add_security_item({"bearerAuth": []})
-app.add_security_scheme("bearerAuth", {
-    "type": "http",
-    "scheme": "bearer",
-    "bearerFormat": "JWT",
-})
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
