@@ -4,10 +4,15 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
 from jwt import ExpiredSignatureError, InvalidTokenError
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, status, Request, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from models.models import User
 from db.db import get_db
+
+bearer_scheme = HTTPBearer(
+    description="Enter token in the format 'Bearer <token>'",
+)
 
 # Load environment variables
 load_dotenv()
