@@ -1,11 +1,9 @@
 from fastapi import FastAPI
-from routes import authRoutes, aiRoutes
-from models import Base
 from db import engine
 from fastapi.middleware.cors import CORSMiddleware
-import os
-from app.routes import authRoutes
-from app.db.db import Base, engine
+from models import Base
+from routes import authRoutes, aiRoutes
+from db.db import Base, engine
 
 Base.metadata.create_all(bind=engine)
 
