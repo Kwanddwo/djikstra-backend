@@ -31,6 +31,10 @@ target_metadata = Base.metadata
 # ... etc.
 
 url = os.getenv("DATABASE_URL")
+
+if url.startswith("postgres://"):
+    url = url.replace("postgres://", "postgresql://", 1)
+
 if url is not None:
     config.set_main_option("sqlalchemy.url", url)
 
