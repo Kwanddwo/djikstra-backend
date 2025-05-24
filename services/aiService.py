@@ -30,7 +30,7 @@ async def get_response(req: ChatRequest, db, user: User, additional_context: str
     if predict([req.user_input])[0] == 1:
         return {"reply": "Hey, I'd love to help you, but I can't assist with that kind of content. Please ask me something else."}
 
-    user_ctx = get_user_learning_levels(user.id)  # Replace with actual user ID
+    user_ctx = get_user_learning_levels(user.id, db)  # Replace with actual user ID
     
     system_prompt = (
         f"{SYSTEM_PROMPT_BASE} "

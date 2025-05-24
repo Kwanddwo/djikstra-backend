@@ -1,15 +1,18 @@
 from models.models import Skill, User
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 def get_user_learning_levels(user_id: str, db: Session):
     # Query all skills and the user's learning level for each
     results = (
         db.execute(
-            """
-            SELECT s.name, us.learning_level
-            FROM skills s
-            LEFT JOIN user_skills us ON s.id = us.skill_id AND us.user_id = :user_id
-            """,
+            text(
+                """
+                SELECT s.name, us.learning_level
+                FROM skills s
+                LEFT JOIN user_skills us ON s.id = us.skill_id AND us.user_id = :user_id
+                """
+            ), 
             {"user_id": user_id}
         )
     ).fetchall()
