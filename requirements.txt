@@ -4,8 +4,8 @@ sqlalchemy
 alembic
 psycopg2-binary
 PyJWT
-passlib
 python-dotenv
 httpx
 pydantic
-bcrypt
+passlib>=1.7.4
+bcrypt>=3.2.0,<4.1.0
