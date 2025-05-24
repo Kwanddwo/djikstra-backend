@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from db.db import Base
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Association table for many-to-many relationship between User and Skill, with learning level
 user_skills = Table(
@@ -40,7 +40,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     tokens_used = Column(Integer, default=0)
-    last_reset = Column(DateTime, default=datetime.utcnow)
+    last_reset = Column(DateTime, default=datetime.utc(timezone.utc))
     skills = relationship("Skill", secondary=user_skills, back_populates="users")
 
 class Skill(Base):
@@ -95,7 +95,7 @@ class PromptLog(Base):
     type = Column(String, nullable=False)  # e.g., "message", "proposition", "question", "hint", "example"
     user_prompt = Column(String, nullable=False)
     llm_response = Column(String, nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = Column(DateTime, default=datetime.utc(timezone.utc), nullable=False)
 
     user = relationship("User")
     unit = relationship("Unit")
@@ -106,8 +106,8 @@ class UserUnitProgress(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     unit_id = Column(UUID(as_uuid=True), ForeignKey("units.id"), nullable=False)
     completion_percentage = Column(Float, default=0.0, nullable=False)  # 0.0 to 1.0
-    last_updated = Column(DateTime, default=datetime.utcnow, nullable=False)   
-    completed_at = Column(DateTime, default=datetime.utcnow, nullable=True)
+    last_updated = Column(DateTime, default=datetime.utc(timezone.utc), nullable=False)   
+    completed_at = Column(DateTime, default=datetime.utc(timezone.utc), nullable=True)
 
     user = relationship("User")
     unit = relationship("Unit")

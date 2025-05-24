@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from profanity_check import predict
 from schemas.schemas import ChatRequest
 from models.models import User
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from helpers.skillHelpers import get_user_learning_levels
 
 DAILY_LIMIT = 10_000
@@ -76,9 +76,9 @@ def update_user_tokens_used(user: User, tokens: int, db):
 
 def quota_ok(user: User, db):
     # reset once every 24h
-    if datetime.utcnow() - user.last_reset > timedelta(days=1):
+    if datetime.now(timezone.utc) - user.last_reset > timedelta(days=1):
         user.tokens_used = 0
-        user.last_reset = datetime.utcnow()
+        user.last_reset = datetime.now(timezone.utc)
         db.commit()
     if user.tokens_used >= DAILY_LIMIT:
         raise HTTPException(429, "Daily token limit reached.")
