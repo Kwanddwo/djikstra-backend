@@ -5,6 +5,7 @@ from profanity_check import predict
 from schemas.schemas import ChatRequest
 from models.models import User
 from datetime import datetime, timedelta
+from helpers.skillHelpers import get_user_context
 
 DAILY_LIMIT = 10_000
 INFERENCE_URL     = os.getenv("INFERENCE_URL")
@@ -18,25 +19,6 @@ SYSTEM_PROMPT_BASE = (
     "Provide step-by-step explanations, avoid giving direct answers, and tailor your help "
     "to the user's current skill level."
 )
-
-def get_user_context(user_id: str):
-    # Placeholder function to get user context
-    # In a real application, this would query a database or other data source
-    return {
-        "Learning Levels": {
-            "Graph traversal": 0.85,
-            "Graph basics": 0.75,
-            "Graph algorithms": 0.65,
-            "Graph theory": 0.55,
-            "Graph data structures": 0.45,
-            "Graph applications": 0.35,
-            "Graph optimization": 0.25,
-            "Graph complexity": 0.15,
-            "Graph proofs": 0.05,
-            "Graph history": 0.0,
-        },
-        "Current Page": "Shortest Path Algorithms"    
-    }
 
 async def get_response(req: ChatRequest, db, user: User):
     if not quota_ok(user, db):
