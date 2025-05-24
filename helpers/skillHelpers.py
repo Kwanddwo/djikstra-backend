@@ -1,7 +1,7 @@
 from models.models import Skill, User
 from sqlalchemy.orm import Session
 
-def get_user_context(user_id: str, db: Session):
+def get_user_learning_levels(user_id: str, db: Session):
     # Query all skills and the user's learning level for each
     results = (
         db.execute(
@@ -19,5 +19,4 @@ def get_user_context(user_id: str, db: Session):
     # Optionally, you can add more context (e.g., current page/unit)
     return {
         "Learning Levels": learning_levels,
-        # "Current Page": ... # Add if you have this info
     }

@@ -5,7 +5,7 @@ from profanity_check import predict
 from schemas.schemas import ChatRequest
 from models.models import User
 from datetime import datetime, timedelta
-from helpers.skillHelpers import get_user_context
+from helpers.skillHelpers import get_user_learning_levels
 
 DAILY_LIMIT = 10_000
 INFERENCE_URL     = os.getenv("INFERENCE_URL")
@@ -20,7 +20,7 @@ SYSTEM_PROMPT_BASE = (
     "to the user's current skill level."
 )
 
-async def get_response(req: ChatRequest, db, user: User):
+async def get_response(req: ChatRequest, db, user: User, additional_context: str = None):
     if not quota_ok(user, db):
         raise HTTPException(429, "Daily token limit reached.")
     
@@ -30,12 +30,12 @@ async def get_response(req: ChatRequest, db, user: User):
     if predict([req.user_input])[0] == 1:
         return {"reply": "Hey, I'd love to help you, but I can't assist with that kind of content. Please ask me something else."}
 
-    user_ctx = get_user_context(user.id)  # Replace with actual user ID
+    user_ctx = get_user_learning_levels(user.id)  # Replace with actual user ID
     
     system_prompt = (
         f"{SYSTEM_PROMPT_BASE} "
-        f"Here is the user's current Learning levels, they range from 0 to 1, 0 is Beginner, 1 is master: {user_ctx["Learning Levels"]} "
-        f"The user's current page is {user_ctx['Current Page']} "
+        f"Here is the user's current Learning levels, they range from 0 to 1, 0 is Beginner, 1 is master: {user_ctx["Learning Levels"]}."
+        + (f" Additional context: {additional_context}" if additional_context else "")
     )
 
     payload = {

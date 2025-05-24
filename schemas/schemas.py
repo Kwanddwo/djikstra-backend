@@ -34,6 +34,14 @@ class Token(BaseModel):
 # --- Chat Request Schema ---
 class ChatRequest(BaseModel):
     user_input: str
+    additional_context: Optional[str] = None
+    class Config:
+        schema_extra = {
+            "example": {
+                "user_input": "What is an edge?",
+                "additional_context": "User is currently on the 'What is a graph?' Lesson in the 'Introduction to Graphs' unit."
+            }
+        }
 
 # --- Course & Unit Schemas ---
 class UnitOut(BaseModel):
