@@ -75,7 +75,7 @@ async def get_response(req: ChatRequest, db, user: User):
         try:
             resp = await client.post(f"{INFERENCE_URL}/v1/chat/completions", json=payload, headers=headers, timeout=30)
         except httpx.ReadTimeout:
-            raise HTTPException(504, "AI service took too long—please try again shortly.")
+            raise HTTPException(504, "AI service took too long (More than 30 seconds) please simplify your request or try again later.")
         except httpx.RequestError as e:
             raise HTTPException(500, f"AI service request error: {e}")
 
@@ -84,11 +84,13 @@ async def get_response(req: ChatRequest, db, user: User):
     
     data = resp.json()
     total_tokens = data["usage"]["total_tokens"]
-    if total_tokens > 2000:
-        raise HTTPException(400, "Token limit exceeded. Please shorten your request.")
-    print(data)
+    update_user_tokens_used(user, total_tokens, db)
     return {"reply": data["choices"][0]["message"]["content"]}
 
+
+def update_user_tokens_used(user: User, tokens: int, db):
+    user.tokens_used += tokens
+    db.commit()
 
 def quota_ok(user: User, db):
     # reset once every 24h
