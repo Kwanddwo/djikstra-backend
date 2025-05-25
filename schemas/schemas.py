@@ -43,21 +43,6 @@ class ChatRequest(BaseModel):
             }
         }
 
-# --- Course & Unit Schemas ---
-class UnitOut(BaseModel):
-    id: UUID
-    name: str
-    course_id: UUID
-    class Config:
-        orm_mode = True
-
-class CourseOut(BaseModel):
-    id: UUID
-    name: str
-    description: Optional[str]
-    units: List[UnitOut] = []
-    class Config:
-        orm_mode = True
 
 # --- Lesson Schemas ---
 class LessonOut(BaseModel):
@@ -67,11 +52,6 @@ class LessonOut(BaseModel):
     unit_id: UUID
     class Config:
         orm_mode = True
-
-class LessonCreate(BaseModel):
-    title: str
-    content: str
-    unit_id: UUID
 
 # --- Practice Problem Schemas ---
 class PracticeProblemOut(BaseModel):
@@ -87,6 +67,29 @@ class PracticeProblemCreate(BaseModel):
     type: str
     question: str
     data: Optional[str] = None
+    unit_id: UUID
+
+# --- Course & Unit Schemas ---
+class UnitOut(BaseModel):
+    id: UUID
+    name: str
+    course_id: UUID
+    lesson: LessonOut
+    practice_problems: List[PracticeProblemOut] = []
+    class Config:
+        orm_mode = True
+
+class CourseOut(BaseModel):
+    id: UUID
+    name: str
+    description: Optional[str]
+    units: List[UnitOut] = []
+    class Config:
+        orm_mode = True
+        
+class LessonCreate(BaseModel):
+    title: str
+    content: str
     unit_id: UUID
 
 # --- Skill Schemas ---
