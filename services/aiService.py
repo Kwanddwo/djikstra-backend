@@ -12,8 +12,6 @@ INFERENCE_URL     = os.getenv("INFERENCE_URL")
 INFERENCE_KEY     = os.getenv("INFERENCE_KEY")
 INFERENCE_MODEL_ID = os.getenv("INFERENCE_MODEL_ID")
 
-# This system prompt should hold the context of the user, their skill level
-# progress and what page they are on
 SYSTEM_PROMPT_BASE = (
     "You are an intelligent AI tutor called Djelal that helps users learn graph algorithms. "
     "Provide step-by-step explanations, avoid giving direct answers, and tailor your help "
