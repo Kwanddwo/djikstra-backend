@@ -13,7 +13,7 @@ INFERENCE_KEY     = os.getenv("INFERENCE_KEY")
 INFERENCE_MODEL_ID = os.getenv("INFERENCE_MODEL_ID")
 
 SYSTEM_PROMPT_BASE = (
-    "You are an intelligent AI tutor called Djelal that helps users learn graph algorithms. "
+    "You are an intelligent AI tutor called that helps users learn graph algorithms. "
     "Provide step-by-step explanations, avoid giving direct answers, and tailor your help "
     "to the user's current skill level."
 )
@@ -73,8 +73,11 @@ def update_user_tokens_used(user: User, tokens: int, db):
     db.commit()
 
 def quota_ok(user: User, db):
-    # reset once every 24h
-    if datetime.now(timezone.utc) - user.last_reset > timedelta(days=1):
+    # Ensure last_reset is timezone-aware
+    last_reset = user.last_reset
+    if last_reset.tzinfo is None:
+        last_reset = last_reset.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) - last_reset > timedelta(days=1):
         user.tokens_used = 0
         user.last_reset = datetime.now(timezone.utc)
         db.commit()

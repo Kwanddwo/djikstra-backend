@@ -40,7 +40,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     tokens_used = Column(Integer, default=0)
-    last_reset = Column(DateTime, default=datetime.now(timezone.utc))
+    last_reset = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     skills = relationship("Skill", secondary=user_skills, back_populates="users")
 
 class Skill(Base):
