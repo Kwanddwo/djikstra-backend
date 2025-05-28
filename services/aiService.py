@@ -68,10 +68,9 @@ async def get_response(req: ChatRequest, db, user: User, additional_context: str
     # Log the prompt
     prompt_log = PromptLog(
         user_id=user.id,
-        prompt=req.user_input,
-        response=data["choices"][0]["message"]["content"],
+        user_prompt=req.user_input,
+        llm_response=data["choices"][0]["message"]["content"],
         tokens_used=total_tokens,
-        timestamp=datetime.now(timezone.utc)
     )
     db.add(prompt_log)
     db.commit()

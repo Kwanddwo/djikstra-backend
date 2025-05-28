@@ -91,23 +91,30 @@ class PromptLog(Base):
     __tablename__ = "prompt_logs"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    unit_id = Column(UUID(as_uuid=True), ForeignKey("units.id"), nullable=False)
-    type = Column(String, nullable=False)  # e.g., "message", "proposition", "question", "hint", "example"
     user_prompt = Column(String, nullable=False)
     llm_response = Column(String, nullable=False)
+    tokens_used = Column(Integer, nullable=False)
     timestamp = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
 
     user = relationship("User")
     unit = relationship("Unit")
 
-class UserUnitProgress(Base):
-    __tablename__ = "user_unit_progress"
+class UserLessonCompletion(Base):
+    __tablename__ = "user_lesson_completion"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    unit_id = Column(UUID(as_uuid=True), ForeignKey("units.id"), nullable=False)
-    completion_percentage = Column(Float, default=0.0, nullable=False)  # 0.0 to 1.0
-    last_updated = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)   
-    completed_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=True)
+    lesson_id = Column(UUID(as_uuid=True), ForeignKey("lessons.id"), nullable=False)
+    completed_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
 
     user = relationship("User")
-    unit = relationship("Unit")
+    lesson = relationship("Lesson")
+
+class UserProblemCompletion(Base):
+    __tablename__ = "user_problem_completion"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    problem_id = Column(UUID(as_uuid=True), ForeignKey("practice_problems.id"), nullable=False)
+    completed_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
+
+    user = relationship("User")
+    problem = relationship("PracticeProblem")
