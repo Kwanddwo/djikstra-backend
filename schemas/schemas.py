@@ -111,7 +111,6 @@ class UserSkillOut(BaseModel):
 
 # --- User Unit Progress ---
 class UserUnitProgressOut(BaseModel):
-    id: UUID
     user_id: UUID
     unit_id: UUID
     completion_percentage: float
@@ -123,12 +122,33 @@ class UserUnitProgressUpdate(BaseModel):
     completion_percentage: float
     last_updated: Optional[datetime] = None
 
+class UserLessonCompletion(BaseModel):
+    id: UUID
+    user_id: UUID
+    lesson_id: UUID
+    completed_at: datetime
+    class Config:
+        orm_mode = True
+
+class UserProblemCompletion(BaseModel):
+    id: UUID
+    user_id: UUID
+    problem_id: UUID
+    completed_at: datetime
+    class Config:
+        orm_mode = True 
+
+class UserCompletions(BaseModel):
+    user_id: UUID
+    lessons: List[UserLessonCompletion]
+    practice_problems: List[UserProblemCompletion]
+    class Config:
+        orm_mode = True
+
 # --- Prompt Log ---
 class PromptLogOut(BaseModel):
     id: UUID
     user_id: UUID
-    unit_id: UUID
-    type: str
     user_prompt: str
     llm_response: str
     timestamp: datetime

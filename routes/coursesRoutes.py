@@ -1,7 +1,8 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from db.db import get_db
-from models.models import Course, Unit, Lesson, PracticeProblem, Skill, User, PromptLog, UserUnitProgress
+from models.models import Course, Unit, Lesson, PracticeProblem, Skill, User, PromptLog, UserLessonCompletion, UserProblemCompletion
 from schemas import schemas
 from typing import List
 
@@ -119,31 +120,85 @@ def get_user_skills(user_id: str, db: Session = Depends(get_db)):
     # You may need to join user_skills for progress
     return user.skills
 
+def get_progress_percentage(
+        unit: Unit, 
+        lesson_completions: List[UserLessonCompletion], 
+        problem_completions: List[UserProblemCompletion]
+    ):
+    # Units always have only one lesson
+    total_parts = 1 + len(unit.practice_problems)
+
+    if total_parts == 0:
+        return 0  # Avoid division by zero if there are no parts in the unit
+
+    completed_lessons = 1 if unit.lesson.id in [lc.lesson_id for lc in lesson_completions] else 0
+    completed_problems = sum(1 for problem in unit.practice_problems if problem.id in [pc.problem_id for pc in problem_completions])
+    completed_parts = completed_lessons + completed_problems
+    return int((completed_parts / total_parts) * 100)
+
+
 @router.get("/users/{user_id}/units", response_model=List[schemas.UserUnitProgressOut])
 def get_user_units(user_id: str, db: Session = Depends(get_db)):
-    return db.query(UserUnitProgress).filter(UserUnitProgress.user_id == user_id).all()
+    lesson_completions = db.query(UserLessonCompletion).filter(UserLessonCompletion.user_id == user_id).all()
+    problem_completions = db.query(UserProblemCompletion).filter(UserProblemCompletion.user_id == user_id).all()
+    # Extract unit_ids from completions
+    lesson_unit_ids = [completion.lesson.unit_id for completion in lesson_completions]
+    problem_unit_ids = [completion.problem.unit_id for completion in problem_completions]
+    
+    # Get unique unit_ids
+    all_unit_ids = set(lesson_unit_ids + problem_unit_ids)
+    units = db.query(Unit).filter(Unit.id.in_(all_unit_ids)).all()
+
+    user_units = []
+    for unit in units:
+        progress_percentage = get_progress_percentage(unit, lesson_completions, problem_completions)
+        user_units.append({
+            "user_id": user_id,
+            "unit_id": unit.id,
+            "completion_percentage": progress_percentage,
+            "last_updated": datetime.now(timezone.utc)
+        })
+
+    return user_units
 
 @router.get("/users/{user_id}/units/{unit_id}/progress", response_model=schemas.UserUnitProgressOut)
 def get_user_unit_progress(user_id: str, unit_id: str, db: Session = Depends(get_db)):
-    progress = db.query(UserUnitProgress).filter(UserUnitProgress.user_id == user_id, UserUnitProgress.unit_id == unit_id).first()
-    if not progress:
-        raise HTTPException(404, "Progress not found")
+    unit = db.query(Unit).filter(Unit.id == unit_id).first()
+    if not unit:
+        raise HTTPException(404, "Unit not found")
+    lesson_completions = db.query(UserLessonCompletion).filter(UserLessonCompletion.user_id == user_id and UserLessonCompletion.lesson.unit_id == unit_id).all()
+    problem_completions = db.query(UserProblemCompletion).filter(UserProblemCompletion.user_id == user_id and UserProblemCompletion.problem.unit_id == unit_id).all()
+    completion_percentage = get_progress_percentage(unit, lesson_completions, problem_completions)
+    progress = {
+        "user_id": user_id,
+        "unit_id": unit_id,
+        "completion_percentage": completion_percentage,
+        "last_updated": datetime.now(timezone.utc)
+    }
     return progress
 
-@router.post("/users/{user_id}/units/{unit_id}/progress", response_model=schemas.UserUnitProgressOut)
-def update_user_unit_progress(user_id: str, unit_id: str, progress: schemas.UserUnitProgressUpdate, db: Session = Depends(get_db)):
-    db_progress = db.query(UserUnitProgress).filter(UserUnitProgress.user_id == user_id, UserUnitProgress.unit_id == unit_id).first()
-    if not db_progress:
-        db_progress = UserUnitProgress(user_id=user_id, unit_id=unit_id, **progress.dict())
-        db.add(db_progress)
-    else:
-        for k, v in progress.dict().items():
-            setattr(db_progress, k, v)
-    db.commit()
-    db.refresh(db_progress)
-    return db_progress
+# --- Lesson and Problem Completion ---
+@router.get("/users/{user_id}/complete", response_model=schemas.UserCompletions)
+def get_user_completions(user_id: str, db: Session = Depends(get_db)):
+    completions = {
+        "user_id": user_id,
+        "lessons": db.query(UserLessonCompletion).filter(UserLessonCompletion.user_id == user_id).all(),
+        "practice_problems": db.query(UserProblemCompletion).filter(UserProblemCompletion.user_id == user_id).all()
+    }
+    return completions
 
-# --- Logging ---
-@router.get("/users/{user_id}/prompt_logs", response_model=List[schemas.PromptLogOut])
-def get_prompt_logs(user_id: str, db: Session = Depends(get_db)):
-    return db.query(PromptLog).filter(PromptLog.user_id == user_id).all()
+@router.post("/users/{user_id}/lessons/{lesson_id}/complete", response_model=schemas.UserLessonCompletion)
+def complete_lesson(user_id: str, lesson_id: str, db: Session = Depends(get_db)):
+    db_lesson_completion = UserLessonCompletion(user_id=user_id, lesson_id=lesson_id)
+    db.add(db_lesson_completion)
+    db.commit()
+    db.refresh(db_lesson_completion)
+    return db_lesson_completion
+
+@router.post("/users/{user_id}/practice_problems/{problem_id}/complete", response_model=schemas.UserProblemCompletion)
+def complete_problem(user_id: str, problem_id: str, db: Session = Depends(get_db)):
+    db_problem_completion = UserProblemCompletion(user_id=user_id, problem_id=problem_id)
+    db.add(db_problem_completion)
+    db.commit()
+    db.refresh(db_problem_completion)
+    return db_problem_completion

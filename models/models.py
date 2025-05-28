@@ -97,7 +97,6 @@ class PromptLog(Base):
     timestamp = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
 
     user = relationship("User")
-    unit = relationship("Unit")
 
 class UserLessonCompletion(Base):
     __tablename__ = "user_lesson_completion"
