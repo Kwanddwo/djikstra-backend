@@ -2,11 +2,18 @@ from fastapi import APIRouter, Depends, Request
 from schemas.schemas import ChatRequest
 from services import aiService
 from helpers.authHelpers import get_current_user
-from models.models import User
+from models.models import User, PromptLog
+from typing import List
+from schemas import schemas
 from db.db import get_db
 from sqlalchemy.orm import Session
 
 router = APIRouter()
+
+# --- Logging ---
+@router.get("/users/{user_id}/prompt_logs", response_model=List[schemas.PromptLogOut])
+def get_prompt_logs(user_id: str, db: Session = Depends(get_db)):
+    return db.query(PromptLog).filter(PromptLog.user_id == user_id).all()
 
 @router.post("/ai-chat")
 async def ai_chat(

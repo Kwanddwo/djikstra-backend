@@ -3,7 +3,7 @@ import httpx
 from fastapi import HTTPException
 from profanity_check import predict
 from schemas.schemas import ChatRequest
-from models.models import User
+from models.models import User, PromptLog
 from datetime import datetime, timedelta, timezone
 from helpers.skillHelpers import get_user_learning_levels
 
@@ -65,6 +65,16 @@ async def get_response(req: ChatRequest, db, user: User, additional_context: str
     data = resp.json()
     total_tokens = data["usage"]["total_tokens"]
     update_user_tokens_used(user, total_tokens, db)
+    # Log the prompt
+    prompt_log = PromptLog(
+        user_id=user.id,
+        prompt=req.user_input,
+        response=data["choices"][0]["message"]["content"],
+        tokens_used=total_tokens,
+        timestamp=datetime.now(timezone.utc)
+    )
+    db.add(prompt_log)
+    db.commit()
     return {"reply": data["choices"][0]["message"]["content"]}
 
 
@@ -73,6 +83,7 @@ def update_user_tokens_used(user: User, tokens: int, db):
     db.commit()
 
 def quota_ok(user: User, db):
+    user = user.dump()
     # Ensure last_reset is timezone-aware
     last_reset = user.last_reset
     if last_reset.tzinfo is None:
