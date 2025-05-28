@@ -83,7 +83,6 @@ def update_user_tokens_used(user: User, tokens: int, db):
     db.commit()
 
 def quota_ok(user: User, db):
-    user = user.dump()
     # Ensure last_reset is timezone-aware
     last_reset = user.last_reset
     if last_reset.tzinfo is None:
