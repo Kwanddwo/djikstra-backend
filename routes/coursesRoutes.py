@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from db.db import get_db
-from models.models import Course, Unit, Lesson, PracticeProblem, Skill, User, UserCourseOrderProgress, UserLessonCompletion, UserProblemCompletion
+from models.models import Course, Unit, Lesson, PracticeProblem, Skill, User, user_skills, lesson_skills, problem_skills, UserCourseOrderProgress, UserLessonCompletion, UserProblemCompletion
 from schemas import schemas
 from typing import List
 
@@ -173,8 +173,19 @@ def get_user_skills(user_id: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(404, "User not found")
-    # You may need to join user_skills for progress
-    return user.skills
+    # You may need to join with the user_skills table to get the learning levels
+    skills_user = db.query(user_skills).filter(user_skills.c.user_id == user_id).all()
+    skills = []
+    for user_skill in skills_user:
+        skill = db.query(Skill).filter(Skill.id == user_skill.skill_id).first()
+        if skill:
+            skills.append({
+                "id": skill.id,
+                "name": skill.name,
+                "description": skill.description,
+                "learning_level": user_skill.learning_level
+            })
+    return skills
 
 def get_progress_percentage(
         unit: Unit, 
@@ -250,8 +261,100 @@ def get_user_completions(user_id: str, db: Session = Depends(get_db)):
     }
     return completions
 
+def addLessonSkillsToUser(user: User, skills: List[Skill], lesson_id: str, db: Session):
+    for skill in skills:
+        # Check if user already has this skill
+        existing_user_skill = db.query(user_skills).filter(
+            user_skills.c.user_id == user.id,
+            user_skills.c.skill_id == skill.id
+        ).first()
+        
+        if existing_user_skill:
+            # Update existing learning level by adding the gain
+            # Get the gain from lesson_skills association table
+            lesson_skill_gain = db.query(lesson_skills.c.gain).filter(
+                lesson_skills.c.skill_id == skill.id,
+                lesson_skills.c.lesson_id == lesson_id
+            ).first()
+            
+            gain_value = lesson_skill_gain[0] if lesson_skill_gain else 0.1  # Default gain
+            
+            # Update the learning level
+            db.execute(
+                user_skills.update()
+                .where(user_skills.c.user_id == user.id)
+                .where(user_skills.c.skill_id == skill.id)
+                .values(learning_level=user_skills.c.learning_level + gain_value)
+            )
+        else:
+            # Create new user_skills entry
+            lesson_skill_gain = db.query(lesson_skills.c.gain).filter(
+                lesson_skills.c.skill_id == skill.id
+            ).first()
+            
+            initial_level = lesson_skill_gain[0] if lesson_skill_gain else 0.1  # Default gain
+            
+            # Insert new user_skills entry
+            db.execute(
+                user_skills.insert().values(
+                    user_id=user.id,
+                    skill_id=skill.id,
+                    learning_level=initial_level
+                )
+            )
+
+def addProblemSkillsToUser(user: User, skills: List[Skill], problem_id: str, db: Session):
+    for skill in skills:
+        # Check if user already has this skill
+        existing_user_skill = db.query(user_skills).filter(
+            user_skills.c.user_id == user.id,
+            user_skills.c.skill_id == skill.id
+        ).first()
+        
+        if existing_user_skill:
+            # Update existing learning level by adding the gain
+            # Get the gain from problem_skills association table
+            problem_skill_gain = db.query(problem_skills.c.gain).filter(
+                problem_skills.c.skill_id == skill.id,
+                lesson_skills.c.problem_id == problem_id
+            ).first()
+            
+            gain_value = problem_skill_gain[0] if problem_skill_gain else 0.1  # Default gain
+            
+            # Update the learning level
+            db.execute(
+                user_skills.update()
+                .where(user_skills.c.user_id == user.id)
+                .where(user_skills.c.skill_id == skill.id)
+                .values(learning_level=user_skills.c.learning_level + gain_value)
+            )
+        else:
+            # Create new user_skills entry
+            problem_skill_gain = db.query(problem_skills.c.gain).filter(
+                problem_skills.c.skill_id == skill.id
+            ).first()
+            
+            initial_level = problem_skill_gain[0] if problem_skill_gain else 0.1  # Default gain
+            
+            # Insert new user_skills entry
+            db.execute(
+                user_skills.insert().values(
+                    user_id=user.id,
+                    skill_id=skill.id,
+                    learning_level=initial_level
+                )
+            )
+
 @router.post("/users/{user_id}/lessons/{lesson_id}/complete", response_model=schemas.UserLessonCompletion)
 def complete_lesson(user_id: str, lesson_id: str, db: Session = Depends(get_db)):
+    # Check if this completion already exists
+    existing_completion = db.query(UserLessonCompletion).filter(
+        UserLessonCompletion.user_id == user_id,
+        UserLessonCompletion.lesson_id == lesson_id
+    ).first()
+    if existing_completion:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Lesson already completed")
+    
     lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
     if not lesson:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found")
@@ -271,17 +374,25 @@ def complete_lesson(user_id: str, lesson_id: str, db: Session = Depends(get_db))
     current_order = order_progress.current_order if order_progress else None
     
     if (order_progress is None and unit_order != 1) or (order_progress is not None and current_order != unit_order):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot start this unit, complete previous units first")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This unit is either finished or not unlocked yet")
     
     
     db_lesson_completion = UserLessonCompletion(user_id=user_id, lesson_id=lesson_id)
     db.add(db_lesson_completion)
+    addLessonSkillsToUser(db.query(User).filter(User.id == user_id).first(), lesson.skills, str(lesson.id), db)
     db.commit()
     db.refresh(db_lesson_completion)
     return db_lesson_completion
 
 @router.post("/users/{user_id}/practice_problems/{problem_id}/complete", response_model=schemas.UserProblemCompletion)
 def complete_problem(user_id: str, problem_id: str, db: Session = Depends(get_db)):
+    existing_completion = db.query(UserProblemCompletion).filter(
+        UserProblemCompletion.user_id == user_id,
+        UserProblemCompletion.problem_id == problem_id
+    ).first()
+    if existing_completion:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Lesson already completed")
+    
     problem = db.query(PracticeProblem).filter(PracticeProblem.id == problem_id).first()
     if not problem:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found")
@@ -299,10 +410,11 @@ def complete_problem(user_id: str, problem_id: str, db: Session = Depends(get_db
     print("order_progress: " + str(order_progress.current_order) if order_progress is not None else "1")
     
     if (order_progress is None and unit.order != 1) or (order_progress is not None and order_progress.current_order != unit.order):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot start this unit, complete previous units first")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This unit is either finished or not unlocked yet")
     
     db_problem_completion = UserProblemCompletion(user_id=user_id, problem_id=problem_id)
     db.add(db_problem_completion)
+    addProblemSkillsToUser(db.query(User).filter(User.id == user_id).first(), problem.skills, str(problem.id), db)
     db.commit()
     db.refresh(db_problem_completion)
 

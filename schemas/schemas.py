@@ -120,7 +120,7 @@ class UserSkillOut(BaseModel):
     id: UUID
     name: str
     description: Optional[str]
-    learning_level: float = 0.0
+    learning_level: float
     class Config:
         orm_mode = True
 
