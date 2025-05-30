@@ -95,7 +95,8 @@ def reset_and_seed_database(db: Session):
         # Create unit
         unit = Unit(
             name=title,
-            course_id=course.id
+            course_id=course.id,
+            order=idx 
         )
         db.add(unit)
         db.commit()

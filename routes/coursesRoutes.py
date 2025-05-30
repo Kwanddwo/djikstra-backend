@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from db.db import get_db
-from models.models import Course, Unit, Lesson, PracticeProblem, Skill, User, PromptLog, UserLessonCompletion, UserProblemCompletion
+from models.models import Course, Unit, Lesson, PracticeProblem, Skill, User, UserCourseOrderProgress, UserLessonCompletion, UserProblemCompletion
 from schemas import schemas
 from typing import List
 
@@ -20,12 +20,68 @@ def get_course(course_id: str, db: Session = Depends(get_db)):
         raise HTTPException(404, "Course not found")
     return course
 
+@router.post("/courses", response_model=schemas.CourseOut)
+def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):
+    new_course = Course(**course.dict())
+    db.add(new_course)
+    db.commit()
+    db.refresh(new_course)
+    return new_course
+
+@router.put("/courses/{course_id}", response_model=schemas.CourseOut)
+def update_course(course_id: str, course: schemas.CourseCreate, db: Session = Depends(get_db)):
+    db_course = db.query(Course).filter(Course.id == course_id).first()
+    if not db_course:
+        raise HTTPException(404, "course not found")
+    for k, v in course.dict().items():
+        setattr(db_course, k, v)
+    db.commit()
+    db.refresh(db_course)
+    return db_course
+
+# @router.delete("/courses/{course_id}")
+# def delete_course(course_id: str, db: Session = Depends(get_db)):
+#     db_course = db.query(Course).filter(Course.id == course_id).first()
+#     if not db_course:
+#         raise HTTPException(404, "course not found")
+#     db.delete(db_course)
+#     db.commit()
+#     return {"detail": "Lesson deleted"}
+
 @router.get("/units/{unit_id}", response_model=schemas.UnitOut)
 def get_unit(unit_id: str, db: Session = Depends(get_db)):
     unit = db.query(Unit).filter(Unit.id == unit_id).first()
     if not unit:
         raise HTTPException(404, "Unit not found")
     return unit
+
+@router.post("/units", response_model=schemas.UnitOut)
+def create_unit(unit: schemas.UnitCreate, db: Session = Depends(get_db)):
+    new_unit = Unit(**unit.dict())
+    db.add(new_unit)
+    db.commit()
+    db.refresh(new_unit)
+    return new_unit
+
+@router.put("/units/{unit_id}", response_model=schemas.UnitUpdate)
+def update_unit(unit_id: str, unit: schemas.UnitCreate, db: Session = Depends(get_db)):
+    db_unit = db.query(Unit).filter(Unit.id == unit_id).first()
+    if not db_unit:
+        raise HTTPException(404, "unit not found")
+    for k, v in unit.dict().items():
+        setattr(db_unit, k, v)
+    db.commit()
+    db.refresh(db_unit)
+    return db_unit
+
+# @router.delete("/units/{unit_id}")
+# def delete_unit(unit_id: str, db: Session = Depends(get_db)):
+#     db_unit = db.query(Unit).filter(Unit.id == unit_id).first()
+#     if not db_unit:
+#         raise HTTPException(404, "unit not found")
+#     db.delete(db_unit)
+#     db.commit()
+#     return {"detail": "unit deleted"}
 
 # --- Lessons ---
 @router.get("/lessons/{lesson_id}", response_model=schemas.LessonOut)
@@ -163,11 +219,18 @@ def get_user_units(user_id: str, db: Session = Depends(get_db)):
 
 @router.get("/users/{user_id}/units/{unit_id}/progress", response_model=schemas.UserUnitProgressOut)
 def get_user_unit_progress(user_id: str, unit_id: str, db: Session = Depends(get_db)):
-    unit = db.query(Unit).filter(Unit.id == unit_id).first()
+    unit = db.query(Unit).filter(Unit.id == unit_id).first()    
     if not unit:
         raise HTTPException(404, "Unit not found")
-    lesson_completions = db.query(UserLessonCompletion).filter(UserLessonCompletion.user_id == user_id and UserLessonCompletion.lesson.unit_id == unit_id).all()
-    problem_completions = db.query(UserProblemCompletion).filter(UserProblemCompletion.user_id == user_id and UserProblemCompletion.problem.unit_id == unit_id).all()
+    
+    lesson_completions = db.query(UserLessonCompletion).filter(
+        UserLessonCompletion.user_id == user_id,
+        UserLessonCompletion.lesson.has(unit_id=unit_id)
+    ).all()
+    problem_completions = db.query(UserProblemCompletion).filter(
+        UserProblemCompletion.user_id == user_id,
+        UserProblemCompletion.problem.has(unit_id=unit_id)
+    ).all()
     completion_percentage = get_progress_percentage(unit, lesson_completions, problem_completions)
     progress = {
         "user_id": user_id,
@@ -189,6 +252,28 @@ def get_user_completions(user_id: str, db: Session = Depends(get_db)):
 
 @router.post("/users/{user_id}/lessons/{lesson_id}/complete", response_model=schemas.UserLessonCompletion)
 def complete_lesson(user_id: str, lesson_id: str, db: Session = Depends(get_db)):
+    lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
+    if not lesson:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found")
+    
+    unit = db.query(Unit).filter(Unit.id == lesson.unit_id).first()
+    
+    if not unit:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson's unit not found")
+    
+    order_progress = db.query(UserCourseOrderProgress).filter(
+            UserCourseOrderProgress.user_id == user_id,
+            UserCourseOrderProgress.course_id == unit.course_id
+        ).first()
+    
+    # Check order constraints
+    unit_order = unit.order
+    current_order = order_progress.current_order if order_progress else None
+    
+    if (order_progress is None and unit_order != 1) or (order_progress is not None and current_order != unit_order):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot start this unit, complete previous units first")
+    
+    
     db_lesson_completion = UserLessonCompletion(user_id=user_id, lesson_id=lesson_id)
     db.add(db_lesson_completion)
     db.commit()
@@ -197,8 +282,52 @@ def complete_lesson(user_id: str, lesson_id: str, db: Session = Depends(get_db))
 
 @router.post("/users/{user_id}/practice_problems/{problem_id}/complete", response_model=schemas.UserProblemCompletion)
 def complete_problem(user_id: str, problem_id: str, db: Session = Depends(get_db)):
+    problem = db.query(PracticeProblem).filter(PracticeProblem.id == problem_id).first()
+    if not problem:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found")
+    
+    unit = db.query(Unit).filter(Unit.id == problem.unit_id).first()
+    
+    if not unit:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Problem's unit not found")
+
+    order_progress = db.query(UserCourseOrderProgress).filter(
+            UserCourseOrderProgress.user_id == user_id,
+            UserCourseOrderProgress.course_id == unit.course_id
+        ).first()
+    
+    print("order_progress: " + str(order_progress.current_order) if order_progress is not None else "1")
+    
+    if (order_progress is None and unit.order != 1) or (order_progress is not None and order_progress.current_order != unit.order):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot start this unit, complete previous units first")
+    
     db_problem_completion = UserProblemCompletion(user_id=user_id, problem_id=problem_id)
     db.add(db_problem_completion)
     db.commit()
     db.refresh(db_problem_completion)
+
+    print(f"unit_progress: {get_user_unit_progress(user_id, str(unit.id), db)}")
+
+    # Check if the user has completed all problems in the unit
+    if get_user_unit_progress(user_id, str(unit.id), db)["completion_percentage"] == 100:
+        # If this is the last problem, mark the unit as complete
+        
+        if order_progress is None and unit.order != 1:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot complete last problem without completing previous units")
+        
+        if order_progress is not None:
+            # Update existing progress
+            setattr(order_progress, 'current_order', order_progress.current_order + 1)
+            setattr(order_progress, 'last_updated', datetime.now(timezone.utc))
+            db.commit()
+        else:
+            order_progress = UserCourseOrderProgress(
+                user_id=user_id,
+                course_id=unit.course_id,
+                current_order=2,  # Fix: Set to 2 since we're moving to next unit
+                last_updated=datetime.now(timezone.utc)
+            )
+            db.add(order_progress)
+            db.commit()
+
     return db_problem_completion

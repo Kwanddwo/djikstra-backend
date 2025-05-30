@@ -65,6 +65,7 @@ class Unit(Base):
     name = Column(String, nullable=False)
     course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id"))
     course = relationship("Course", back_populates="units")
+    order = Column(Integer, nullable=False, default=1) # starts at 1
     lesson = relationship("Lesson", uselist=False, back_populates="unit")
     practice_problems = relationship("PracticeProblem", back_populates="unit")
 
@@ -117,3 +118,13 @@ class UserProblemCompletion(Base):
 
     user = relationship("User")
     problem = relationship("PracticeProblem")
+
+class UserCourseOrderProgress(Base):
+    __tablename__ = "user_course_order_progress"
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+    course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id"), primary_key=True)
+    current_order = Column(Integer, nullable=False, default=1)  # starts at 1
+    last_updated = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+
+    user = relationship("User")
+    course = relationship("Course")

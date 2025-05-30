@@ -70,14 +70,29 @@ class PracticeProblemCreate(BaseModel):
     unit_id: UUID
 
 # --- Course & Unit Schemas ---
+class UnitCreate(BaseModel):
+    name: str
+    course_id: UUID
+    order: int = Field(ge=1)  # Order starts at 1
+
 class UnitOut(BaseModel):
     id: UUID
     name: str
     course_id: UUID
+    order: int
     lesson: LessonOut
     practice_problems: List[PracticeProblemOut] = []
     class Config:
         orm_mode = True
+
+class UnitUpdate(BaseModel):
+    name: Optional[str] = None
+    order: Optional[int] = Field(None, ge=1)  # Order starts at 1
+    course_id: Optional[UUID] = None
+
+class CourseCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
 
 class CourseOut(BaseModel):
     id: UUID
