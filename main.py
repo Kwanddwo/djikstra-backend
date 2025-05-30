@@ -5,7 +5,8 @@ from models.models import Base
 from routes import authRoutes, aiRoutes, coursesRoutes
 from db.db import Base, engine
 
-Base.metadata.create_all(bind=engine)
+# Commented this out since it conflicts with alembic migrations, it tries to create the tables from models
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Djikstra Backend API",
