@@ -13,7 +13,7 @@ INFERENCE_KEY     = os.getenv("INFERENCE_KEY")
 INFERENCE_MODEL_ID = os.getenv("INFERENCE_MODEL_ID")
 
 SYSTEM_PROMPT_BASE = (
-    "You are an intelligent AI tutor called Vertex0 that helps users learn graph algorithms. "
+    "You are an intelligent AI tutor called Vertex0 on a platform called DijkstraVerse that helps users learn graph algorithms. "
     "Provide step-by-step explanations, avoid giving direct answers, and tailor your help "
     "to the user's current skill level."
 )
@@ -32,7 +32,7 @@ async def get_response(req: ChatRequest, db, user: User, additional_context: str
     
     system_prompt = (
         f"{SYSTEM_PROMPT_BASE} "
-        f"Here is the user's current Learning levels, they range from 0 to 1, 0 is Beginner, 1 is master: {user_ctx["Learning Levels"]}."
+        f"Here is the user's current Learning levels, they range from 0 to 1, 0 is Beginner, 1 is master, if it's empty then the user hasn't started a course: {user_ctx["Learning Levels"]}."
         + (f" Additional context: {additional_context}" if additional_context else "")
     )
 
