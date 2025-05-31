@@ -316,7 +316,7 @@ def addProblemSkillsToUser(user: User, skills: List[Skill], problem_id: str, db:
             # Get the gain from problem_skills association table
             problem_skill_gain = db.query(problem_skills.c.gain).filter(
                 problem_skills.c.skill_id == skill.id,
-                lesson_skills.c.problem_id == problem_id
+                problem_skills.c.problem_id == problem_id
             ).first()
             
             gain_value = problem_skill_gain[0] if problem_skill_gain else 0.1  # Default gain
