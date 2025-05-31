@@ -33,7 +33,7 @@ async def get_response(req: ChatRequest, db, user: User):
     system_prompt = (
         f"{SYSTEM_PROMPT_BASE} "
         f"Here is the user's current Learning levels, they range from 0 to 1, 0 is Beginner, 1 is master, if it's empty then the user hasn't started a course: {user_ctx["Learning Levels"]}."
-        + (f" Additional context: {ChatRequest.additional_context}" if ChatRequest.additional_context is not None else "")
+        + (f" Additional context: {req.additional_context}" if req.additional_context is not None else "")
     )
 
     payload = {
@@ -68,7 +68,7 @@ async def get_response(req: ChatRequest, db, user: User):
     # Log the prompt
     prompt_log = PromptLog(
         user_id=user.id,
-        user_prompt=(f" Additional context: {ChatRequest.additional_context}" if ChatRequest.additional_context is not None else "") + req.user_input,
+        user_prompt=(f" Additional context: {req.additional_context}" if req.additional_context is not None else "") + req.user_input,
         llm_response=data["choices"][0]["message"]["content"],
         tokens_used=total_tokens,
     )
