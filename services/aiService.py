@@ -18,7 +18,7 @@ SYSTEM_PROMPT_BASE = (
     "to the user's current skill level."
 )
 
-async def get_response(req: ChatRequest, db, user: User, additional_context: str = None):
+async def get_response(req: ChatRequest, db, user: User):
     if not quota_ok(user, db):
         raise HTTPException(429, "Daily token limit reached.")
     
@@ -33,7 +33,7 @@ async def get_response(req: ChatRequest, db, user: User, additional_context: str
     system_prompt = (
         f"{SYSTEM_PROMPT_BASE} "
         f"Here is the user's current Learning levels, they range from 0 to 1, 0 is Beginner, 1 is master, if it's empty then the user hasn't started a course: {user_ctx["Learning Levels"]}."
-        + (f" Additional context: {additional_context}" if additional_context else "")
+        + (f" Additional context: {ChatRequest.additional_context}" if ChatRequest.additional_context is not None else "")
     )
 
     payload = {
@@ -68,7 +68,7 @@ async def get_response(req: ChatRequest, db, user: User, additional_context: str
     # Log the prompt
     prompt_log = PromptLog(
         user_id=user.id,
-        user_prompt=req.user_input,
+        user_prompt=(f" Additional context: {ChatRequest.additional_context}" if ChatRequest.additional_context is not None else "") + req.user_input,
         llm_response=data["choices"][0]["message"]["content"],
         tokens_used=total_tokens,
     )
