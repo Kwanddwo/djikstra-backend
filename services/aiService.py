@@ -28,20 +28,33 @@ async def get_response(req: ChatRequest, db, user: User):
     if predict([req.user_input])[0] == 1:
         return {"reply": "Hey, I'd love to help you, but I can't assist with that kind of content. Please ask me something else."}
 
-    user_ctx = get_user_learning_levels(user.id, db)  # Replace with actual user ID
+    user_ctx = get_user_learning_levels(str(user.id), db)
     
     system_prompt = (
         f"{SYSTEM_PROMPT_BASE} "
-        f"Here is the user's current Learning levels, they range from 0 to 1, 0 is Beginner, 1 is master, if it's empty then the user hasn't started a course: {user_ctx["Learning Levels"]}."
+        f"Here is the user's current Learning levels, they range from 0 to 1, 0 is Beginner, 1 is master, if it's empty then the user hasn't started a course: {user_ctx['Learning Levels']}."
         + (f" Additional context: {req.additional_context}" if req.additional_context is not None else "")
     )
 
+    # Start with system message
+    messages = [{"role": "system", "content": system_prompt}]
+    
+    # Get the last message exchange for this user
+    last_log = db.query(PromptLog).filter(
+        PromptLog.user_id == user.id
+    ).order_by(PromptLog.timestamp.desc()).first()
+    
+    # Include last exchange if it exists
+    if last_log:
+        messages.append({"role": "user", "content": last_log.user_prompt})
+        messages.append({"role": "assistant", "content": last_log.llm_response})
+    
+    # Add current user message
+    messages.append({"role": "user", "content": req.user_input})
+
     payload = {
         "model": INFERENCE_MODEL_ID,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": req.user_input},
-        ],
+        "messages": messages,
         "max_tokens": 1000,
     }
 
@@ -51,7 +64,6 @@ async def get_response(req: ChatRequest, db, user: User):
     }
 
     async with httpx.AsyncClient() as client:
-        # Timeout is set to 30 seconds, should be less in production (5 to 10 seconds)
         try:
             resp = await client.post(f"{INFERENCE_URL}/v1/chat/completions", json=payload, headers=headers, timeout=30)
         except httpx.ReadTimeout:
@@ -65,10 +77,11 @@ async def get_response(req: ChatRequest, db, user: User):
     data = resp.json()
     total_tokens = data["usage"]["total_tokens"]
     update_user_tokens_used(user, total_tokens, db)
+    
     # Log the prompt
     prompt_log = PromptLog(
         user_id=user.id,
-        user_prompt=(f" Additional context: {req.additional_context}" if req.additional_context is not None else "") + req.user_input,
+        user_prompt=req.user_input,  # Store just the user input
         llm_response=data["choices"][0]["message"]["content"],
         tokens_used=total_tokens,
     )
