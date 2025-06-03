@@ -35,20 +35,19 @@ async def get_response(req: ChatRequest, db, user: User):
         f"Here is the user's current Learning levels, they range from 0 to 1, 0 is Beginner, 1 is master, if it's empty then the user hasn't started a course: {user_ctx['Learning Levels']}."
         + (f" Additional context: {req.additional_context}" if req.additional_context is not None else "")
     )
-
     # Start with system message
     messages = [{"role": "system", "content": system_prompt}]
-    
-    # Get the last message exchange for this user
-    last_log = db.query(PromptLog).filter(
-        PromptLog.user_id == user.id
-    ).order_by(PromptLog.timestamp.desc()).first()
-    
-    # Include last exchange if it exists
-    if last_log:
-        messages.append({"role": "user", "content": last_log.user_prompt})
-        messages.append({"role": "assistant", "content": last_log.llm_response})
-    
+    if req.additional_context is not None and "multiple_choice question incorrectly. Here are the details" in req.additional_context:    
+        # Get the last message exchange for this user
+        last_log = db.query(PromptLog).filter(
+            PromptLog.user_id == user.id
+        ).order_by(PromptLog.timestamp.desc()).first()
+        
+        # Include last exchange if it exists
+        if last_log:
+            messages.append({"role": "user", "content": last_log.user_prompt})
+            messages.append({"role": "assistant", "content": last_log.llm_response})
+        
     # Add current user message
     messages.append({"role": "user", "content": req.user_input})
 
