@@ -22,7 +22,7 @@ security_scheme = HTTPBearer(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["dijkstra-reactjs.vercel.app", "dijkstra-frontend.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
