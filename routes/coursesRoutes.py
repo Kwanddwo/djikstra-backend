@@ -20,7 +20,7 @@ def get_course(course_id: str, db: Session = Depends(get_db)):
         raise HTTPException(404, "Course not found")
     return course
 
-@router.post("/courses", response_model=schemas.CourseOut)
+# @router.post("/courses", response_model=schemas.CourseOut)
 def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):
     new_course = Course(**course.dict())
     db.add(new_course)
@@ -28,7 +28,7 @@ def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):
     db.refresh(new_course)
     return new_course
 
-@router.put("/courses/{course_id}", response_model=schemas.CourseOut)
+# @router.put("/courses/{course_id}", response_model=schemas.CourseOut)
 def update_course(course_id: str, course: schemas.CourseCreate, db: Session = Depends(get_db)):
     db_course = db.query(Course).filter(Course.id == course_id).first()
     if not db_course:
@@ -55,7 +55,7 @@ def get_unit(unit_id: str, db: Session = Depends(get_db)):
         raise HTTPException(404, "Unit not found")
     return unit
 
-@router.post("/units", response_model=schemas.UnitOut)
+# @router.post("/units", response_model=schemas.UnitOut)
 def create_unit(unit: schemas.UnitCreate, db: Session = Depends(get_db)):
     new_unit = Unit(**unit.dict())
     db.add(new_unit)
@@ -63,7 +63,7 @@ def create_unit(unit: schemas.UnitCreate, db: Session = Depends(get_db)):
     db.refresh(new_unit)
     return new_unit
 
-@router.put("/units/{unit_id}", response_model=schemas.UnitUpdate)
+# @router.put("/units/{unit_id}", response_model=schemas.UnitUpdate)
 def update_unit(unit_id: str, unit: schemas.UnitCreate, db: Session = Depends(get_db)):
     db_unit = db.query(Unit).filter(Unit.id == unit_id).first()
     if not db_unit:
@@ -91,7 +91,7 @@ def get_lesson(lesson_id: str, db: Session = Depends(get_db)):
         raise HTTPException(404, "Lesson not found")
     return lesson
 
-@router.post("/lessons", response_model=schemas.LessonOut)
+# @router.post("/lessons", response_model=schemas.LessonOut)
 def create_lesson(lesson: schemas.LessonCreate, db: Session = Depends(get_db)):
     new_lesson = Lesson(**lesson.dict())
     db.add(new_lesson)
@@ -99,7 +99,7 @@ def create_lesson(lesson: schemas.LessonCreate, db: Session = Depends(get_db)):
     db.refresh(new_lesson)
     return new_lesson
 
-@router.put("/lessons/{lesson_id}", response_model=schemas.LessonOut)
+# @router.put("/lessons/{lesson_id}", response_model=schemas.LessonOut)
 def update_lesson(lesson_id: str, lesson: schemas.LessonCreate, db: Session = Depends(get_db)):
     db_lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
     if not db_lesson:
@@ -110,7 +110,7 @@ def update_lesson(lesson_id: str, lesson: schemas.LessonCreate, db: Session = De
     db.refresh(db_lesson)
     return db_lesson
 
-@router.delete("/lessons/{lesson_id}")
+# @router.delete("/lessons/{lesson_id}")
 def delete_lesson(lesson_id: str, db: Session = Depends(get_db)):
     db_lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
     if not db_lesson:
@@ -127,7 +127,7 @@ def get_problem(problem_id: str, db: Session = Depends(get_db)):
         raise HTTPException(404, "Practice problem not found")
     return problem
 
-@router.post("/practice_problems", response_model=schemas.PracticeProblemOut)
+# @router.post("/practice_problems", response_model=schemas.PracticeProblemOut)
 def create_problem(problem: schemas.PracticeProblemCreate, db: Session = Depends(get_db)):
     new_problem = PracticeProblem(**problem.dict())
     db.add(new_problem)
@@ -135,7 +135,7 @@ def create_problem(problem: schemas.PracticeProblemCreate, db: Session = Depends
     db.refresh(new_problem)
     return new_problem
 
-@router.put("/practice_problems/{problem_id}", response_model=schemas.PracticeProblemOut)
+# @router.put("/practice_problems/{problem_id}", response_model=schemas.PracticeProblemOut)
 def update_problem(problem_id: str, problem: schemas.PracticeProblemCreate, db: Session = Depends(get_db)):
     db_problem = db.query(PracticeProblem).filter(PracticeProblem.id == problem_id).first()
     if not db_problem:
@@ -146,7 +146,7 @@ def update_problem(problem_id: str, problem: schemas.PracticeProblemCreate, db: 
     db.refresh(db_problem)
     return db_problem
 
-@router.delete("/practice_problems/{problem_id}")
+# @router.delete("/practice_problems/{problem_id}")
 def delete_problem(problem_id: str, db: Session = Depends(get_db)):
     db_problem = db.query(PracticeProblem).filter(PracticeProblem.id == problem_id).first()
     if not db_problem:
