@@ -37,14 +37,16 @@ async def get_response(req: ChatRequest, db, user: User):
     )
     # Start with system message
     messages = [{"role": "system", "content": system_prompt}]
+    
+    last_log = None
     if req.additional_context is not None and "multiple_choice question incorrectly. Here are the details" in req.additional_context:    
         # Get the last message exchange for this user
         last_log = db.query(PromptLog).filter(
             PromptLog.user_id == user.id
         ).order_by(PromptLog.timestamp.desc()).first()
         
-        # Include last exchange if it exists
-        if last_log:
+    # Include last exchange if it exists
+    if last_log:
             messages.append({"role": "user", "content": last_log.user_prompt})
             messages.append({"role": "assistant", "content": last_log.llm_response})
         
